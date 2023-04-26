@@ -1,0 +1,66 @@
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
+# This file is a template, and might need editing before it works on your project.
+# You can copy and paste this template into a new `.gitlab-ci.yml` file.
+# TODO: re-evaluate this line You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
+
+include:
+  remote: https://github.com/hashicorp/tfc-workflows-gitlab/Base.gitlab-ci.yml
+
+variables:
+  WORKSPACE: $TF_CLOUD_WORKSPACE
+  DIRECTORY: $TF_CLOUD_DIRECTORY
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+      when: always
+      variables:
+        PROJECT1_PIPELINE_NAME: 'Main pipeline'
+        PLAN_ONLY: "false"
+        SPECULATIVE: "false"
+    - if: $CI_MERGE_REQUEST_ID
+      when: always
+      variables:
+        PROJECT1_PIPELINE_NAME: 'MR pipeline: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME'
+        PLAN_ONLY: "true"
+        SPECULATIVE: "true"
+
+upload_configuration:
+  stage: ".pre"
+  extends: .tfc:upload_configuration
+
+create_run:
+  stage: "build"
+  extends: .tfc:create_run
+  dependencies:
+    - "configure"
+
+apply_run:
+  stage: "deploy"
+  extends: .tfc:apply_run
+  dependencies:
+    - "create_run"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+
+## Jobs that run when a merge request is created
+plan_output:
+  stage: "deploy"
+  extends: .tfc:plan_output
+  dependencies:
+    - "create_run"
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      when: always
+
+comment_on_merge_request:
+  stage: ".post"
+  dependencies:
+    - "plan_output"
+  extends: .tfc:comment_on_merge_request
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      when: always
