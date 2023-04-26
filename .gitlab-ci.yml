@@ -39,7 +39,7 @@ apply_run:
   stage: "deploy"
   extends: .tfc:apply_run
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
       when: on_success
 
 ## Jobs that run when a merge request is created
