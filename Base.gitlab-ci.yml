@@ -18,8 +18,6 @@ default:
   script:
     - tfci -hostname=$TF_HOSTNAME -token=$TF_API_TOKEN -organization=$TF_CLOUD_ORGANIZATION upload -workspace=$WORKSPACE -speculative=$SPECULATIVE -directory=$DIRECTORY
   artifacts:
-    paths:
-      - "${CI_JOB_NAME}_payload.json"
     reports:
       dotenv: .env
 
