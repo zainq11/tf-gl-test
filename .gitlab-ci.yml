@@ -6,7 +6,7 @@
 # TODO: re-evaluate this line You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
 
 include:
-  remote: https://github.com/hashicorp/tfc-workflows-gitlab/Base.gitlab-ci.yml
+  remote: https://raw.githubusercontent.com/zainq11/tf-gl-test/main/Base.gitlab-ci.yml
 
 variables:
   WORKSPACE: $TF_CLOUD_WORKSPACE
