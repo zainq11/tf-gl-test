@@ -1,19 +1,43 @@
 # Copyright (c) HashiCorp, Inc.
 # SPDX-License-Identifier: MPL-2.0
 
-# This file is a template, and might need editing before it works on your project.
-# You can copy and paste this template into a new `.gitlab-ci.yml` file.
-# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
+# tfc/Base
 #
+# The purpose of this template is to provide flexibility to the user, so
+# they are able to only include the jobs that they find interesting.
+#
+# Therefore, this template is not supposed to run any jobs. The idea is to only
+# create hidden jobs. See: https://docs.gitlab.com/ee/ci/jobs/#hide-jobs
+# This template provides a foundation for creating CI/CD jobs specifically for the terraform-cloud platform.
+# This template can be included locally or remotely using include:remote.
+
+# Our approach to sharing information across jobs is opinionated. To ensure that all jobs have access to the necessary
+# information, we use dotenv artifacts to expose additional variables.
+# To maintain consistency, any variables created as a result of this approach are intentionally lowercase.
+
 # To contribute improvements to CI/CD templates, please follow the Development guide at:
 # https://docs.gitlab.com/ee/development/cicd/templates.html
-# This specific template is located at:
-# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Bash.gitlab-ci.yml
 
 # See https://docs.gitlab.com/ee/ci/yaml/index.html for all available options
+
+# In order to use this template, the following CI/CD variables need to be defined.
+# Please refer: https://docs.gitlab.com/ee/ci/variables/
+# - TF_HOSTNAME: The hostname of a Terraform Enterprise installation, if using Terraform Enterprise. Defaults to app.terraform.io
+# - TF_API_TOKEN: The token used to authenticate with Terraform Cloud.
+# - TF_CLOUD_ORGANIZATION: The name of the organization in Terraform Cloud.
+# - WORKSPACE: The Workspace name that specifies where the run will be executed
+# - SPECULATIVE: When true, this configuration version may only be used to create runs which are speculative,
+#                that is, can neither be confirmed nor applied.
+# - DIRECTORY: Path to the terraform configuration files.
+
+# The default image is the one that contains the binary for our tool: https://github.com/hashicorp/tfc-workflows-tooling
 default:
   image: mjyocca/tfci:latest
 
+# Create and upload a configuration version to terraform-cloud.variables:
+# exported dotenv variables that can be referenced in later jobs:
+#  - status: one of "Success", "Error", "Timeout", "Noop". Noop means no operation.
+#  - configuration_version_id
 .tfc:upload_configuration:
   script:
     - tfci -hostname=$TF_HOSTNAME -token=$TF_API_TOKEN -organization=$TF_CLOUD_ORGANIZATION upload -workspace=$WORKSPACE -speculative=$SPECULATIVE -directory=$DIRECTORY
@@ -21,6 +45,11 @@ default:
     reports:
       dotenv: .env
 
+# Create a Terraform Cloud run
+# exported dotenv variables that can be referenced in later jobs:
+#  - status: one of "Success", "Error", "Timeout", "Noop". Noop means no operation.
+#  - run_id
+#  - plan_id
 .tfc:create_run:
   variables:
     CONFIGURATION_VERSION_ID: $configuration_version_id
@@ -32,6 +61,7 @@ default:
     reports:
       dotenv: .env
 
+# Apply a Terraform Cloud run
 .tfc:apply_run:
   variables:
     RUN_ID: $run_id
@@ -42,6 +72,12 @@ default:
     reports:
       dotenv: .env
 
+# Output Plan details
+# exported dotenv variables that can be referenced in later jobs:
+#  - status: One of "Success", "Error", "Timeout", "Noop". Noop means no operation.
+#  - add: Resources to add
+#  - change: Resources to change
+#  - destroy: Resources to destroy
 .tfc:plan_output:
   variables:
     PLAN_ID: $plan_id
@@ -51,6 +87,8 @@ default:
     reports:
       dotenv: .env
 
+# tfc:comment_on_merge_request is a hidden job that posts a comment to a Gitlab merge request for which the pipeline is being run.
+# GITLAB_API_TOKEN needs to be defined to use this job. Please refer: https://docs.gitlab.com/ee/user/project/settings/project_access_tokens.html
 .tfc:comment_on_merge_request:
   image: alpine/curl
   variables:
