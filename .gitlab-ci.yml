@@ -34,14 +34,10 @@ upload_configuration:
 create_run:
   stage: "build"
   extends: .tfc:create_run
-  dependencies:
-    - "configure"
 
 apply_run:
   stage: "deploy"
   extends: .tfc:apply_run
-  dependencies:
-    - "create_run"
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
@@ -50,17 +46,19 @@ apply_run:
 plan_output:
   stage: "deploy"
   extends: .tfc:plan_output
-  dependencies:
-    - "create_run"
   rules:
     - if: $CI_MERGE_REQUEST_ID
       when: always
 
 comment_on_merge_request:
   stage: ".post"
-  dependencies:
-    - "plan_output"
-  extends: .tfc:comment_on_merge_request
+  image: alpine/curl
+  variables:
+    MR_COMMENT: |
+      Plan: ${add} to add, ${change} to change, ${destroy} to destroy.
+      [Terraform Cloud Plan](${run_link})
+  script:
+    - 'curl --request POST --header "PRIVATE-TOKEN: $GITLAB_API_TOKEN" "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes" --data-urlencode "body=$MR_COMMENT"'
   rules:
     - if: $CI_MERGE_REQUEST_ID
       when: always
