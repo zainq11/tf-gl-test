@@ -2,28 +2,41 @@
 # SPDX-License-Identifier: MPL-2.0
 
 # This file is a template, and might need editing before it works on your project.
-# You can copy and paste this template into a new `.gitlab-ci.yml` file.
-# TODO: re-evaluate this line You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
+# You can copy and paste this template into a new `.gitlab-ci.yml` file in your project.
 
+# The link to the remote base template. Note that the base template URL is versioned. Please check the base template for additional variables that need to be defined in GitLab.
+# Please subscribe to https://github.com/hashicorp/tfc-workflows-gitlab for updates.
 include:
-  remote: https://raw.githubusercontent.com/zainq11/tf-gl-test/v0.1.0/Base.gitlab-ci.yml
+  remote: https://raw.githubusercontent.com/zainq11/tf-gl-test/v0.2.0/Base.gitlab-ci.yml
 
+# Please refer: https://docs.gitlab.com/ee/ci/variables/
+# Check the base template for mandatory variables that need to be defined in GitLab to communicate with Terraform Cloud
+# In order to use this template, the following CI/CD variables need to be defined in GitLab. The base remote template relies on these variables
+# Please refer: https://docs.gitlab.com/ee/ci/variables/
+# - TF_HOSTNAME: The hostname of a Terraform Enterprise installation, if using Terraform Enterprise. Defaults to app.terraform.io
+# - TF_CLOUD_API_TOKEN: The token used to authenticate with Terraform Cloud.
+# - TF_CLOUD_ORGANIZATION: The name of the organization in Terraform Cloud. This variable is included in links that are shown in the output. The links might not work if this variable is masked.
+# - TF_CLOUD_WORKSPACE: The Workspace name that specifies where the run will be executed. This variable is included in links that are shown in the output. The links might not work if this variable is masked.
+# - TF_CLOUD_DIRECTORY: Path to the terraform configuration files.
 variables:
-  WORKSPACE: $TF_CLOUD_WORKSPACE
-  DIRECTORY: $TF_CLOUD_DIRECTORY
+  PROJECT_PIPELINE_NAME: "Default pipeline name"  # A default is not required.
 
+# These workflows can be tailored to fit your needs.
 workflow:
+  name: "$PROJECT_PIPELINE_NAME"
   rules:
+    # If the current branch is the default branch. Workflows on the main branch perform non-speculative terraform apply.
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
       when: always
       variables:
-        PROJECT1_PIPELINE_NAME: 'Main pipeline'
+        PROJECT_PIPELINE_NAME: "$CI_DEFAULT_BRANCH pipeline"
         PLAN_ONLY: "false"
         SPECULATIVE: "false"
-    - if: $CI_MERGE_REQUEST_ID
+    # Workflows on merge requests only do a plan run.
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: always
       variables:
-        PROJECT1_PIPELINE_NAME: 'MR pipeline: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME'
+        PROJECT_PIPELINE_NAME: "Merge Request pipeline: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
         PLAN_ONLY: "true"
         SPECULATIVE: "true"
 
@@ -47,12 +60,15 @@ plan_output:
   stage: "deploy"
   extends: .tfc:plan_output
   rules:
-    - if: $CI_MERGE_REQUEST_ID
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: always
 
+# Calls GitLab API to submit comments on a merge request.
+# GITLAB_API_TOKEN needs to be defined to use this job. Please refer: https://docs.gitlab.com/ee/user/project/settings/project_access_tokens.html
 comment_on_merge_request:
   stage: ".post"
   image: alpine/curl
+  needs: [ "plan_output" ]
   variables:
     MR_COMMENT: |
       Plan: ${add} to add, ${change} to change, ${destroy} to destroy.
@@ -60,5 +76,5 @@ comment_on_merge_request:
   script:
     - 'curl --request POST --header "PRIVATE-TOKEN: $GITLAB_API_TOKEN" "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes" --data-urlencode "body=$MR_COMMENT"'
   rules:
-    - if: $CI_MERGE_REQUEST_ID
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: always
