@@ -22,11 +22,11 @@
 
 # In order to use this template, the following CI/CD variables need to be defined in GitLab.
 # Please refer: https://docs.gitlab.com/ee/ci/variables/
-# - TF_HOSTNAME: The hostname of a Terraform Enterprise installation, if using Terraform Enterprise. Defaults to app.terraform.io
-# - TF_CLOUD_API_TOKEN: The token used to authenticate with Terraform Cloud.
+# - TF_CLOUD_HOSTNAME : The hostname of a Terraform Enterprise installation, if using Terraform Enterprise. Defaults to app.terraform.io
+# - TF_API_TOKEN: The token used to authenticate with Terraform Cloud.
 # - TF_CLOUD_ORGANIZATION: The name of the organization in Terraform Cloud. This variable is included in links that are shown in the output. The links might not work if this variable is masked.
-# - TF_CLOUD_WORKSPACE: The Workspace name that specifies where the run will be executed. This variable is included in links that are shown in the output. The links might not work if this variable is masked.
-# - TF_CLOUD_DIRECTORY: Path to the terraform configuration files.
+# - TF_WORKSPACE: The Workspace name that specifies where the run will be executed. This variable is included in links that are shown in the output. The links might not work if this variable is masked.
+# - TF_DIRECTORY: Path to the terraform configuration files.
 
 # The default image is the one that contains the binary for our tool: https://github.com/hashicorp/tfc-workflows-tooling
 default:
@@ -38,7 +38,7 @@ default:
 #  - configuration_version_id
 .tfc:upload_configuration:
   script:
-    - tfci -hostname=$TF_HOSTNAME -token=$TF_CLOUD_API_TOKEN -organization=$TF_CLOUD_ORGANIZATION upload -workspace=$TF_CLOUD_WORKSPACE -speculative=$SPECULATIVE -directory=$TF_CLOUD_DIRECTORY
+    - tfci -hostname=$TF_CLOUD_HOSTNAME  -token=$TF_API_TOKEN -organization=$TF_CLOUD_ORGANIZATION upload -workspace=$TF_WORKSPACE -speculative=$SPECULATIVE -directory=$TF_DIRECTORY
   artifacts:
     reports:
       dotenv: .env
@@ -54,7 +54,7 @@ default:
     MESSAGE: ""
     VAR_FILE: ""
   script:
-    - tfci -hostname=$TF_HOSTNAME -token=$TF_CLOUD_API_TOKEN -organization=$TF_CLOUD_ORGANIZATION run create -workspace=$TF_CLOUD_WORKSPACE -configuration_version=$CONFIGURATION_VERSION_ID -message=$MESSAGE -var-file=$VAR_FILE -plan-only=$PLAN_ONLY
+    - tfci -hostname=$TF_CLOUD_HOSTNAME  -token=$TF_API_TOKEN -organization=$TF_CLOUD_ORGANIZATION run create -workspace=$TF_WORKSPACE -configuration_version=$CONFIGURATION_VERSION_ID -message=$MESSAGE -var-file=$VAR_FILE -plan-only=$PLAN_ONLY
   artifacts:
     reports:
       dotenv: .env
@@ -65,7 +65,7 @@ default:
     RUN_ID: $run_id
     COMMENT: "LGTM"
   script:
-    - tfci -hostname=$TF_HOSTNAME -token=$TF_CLOUD_API_TOKEN -organization=$TF_CLOUD_ORGANIZATION run apply -run=$RUN_ID -comment=$COMMENT
+    - tfci -hostname=$TF_CLOUD_HOSTNAME  -token=$TF_API_TOKEN -organization=$TF_CLOUD_ORGANIZATION run apply -run=$RUN_ID -comment=$COMMENT
   artifacts:
     reports:
       dotenv: .env
@@ -80,7 +80,7 @@ default:
   variables:
     PLAN_ID: $plan_id
   script:
-    - tfci -hostname=$TF_HOSTNAME -token=$TF_CLOUD_API_TOKEN -organization=$TF_CLOUD_ORGANIZATION plan output -plan=$PLAN_ID
+    - tfci -hostname=$TF_CLOUD_HOSTNAME  -token=$TF_API_TOKEN -organization=$TF_CLOUD_ORGANIZATION plan output -plan=$PLAN_ID
   artifacts:
     reports:
       dotenv: .env
