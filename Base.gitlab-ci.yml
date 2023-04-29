@@ -61,9 +61,8 @@ default:
   variables:
     CONFIGURATION_VERSION_ID: $configuration_version_id
     MESSAGE: ""
-    VAR_FILE: ""
   script:
-    - tfci -hostname=$TF_CLOUD_HOSTNAME  -token=$TF_API_TOKEN -organization=$TF_CLOUD_ORGANIZATION run create -workspace=$TF_WORKSPACE -configuration_version=$CONFIGURATION_VERSION_ID -message=$MESSAGE -var-file=$VAR_FILE -plan-only=$PLAN_ONLY
+    - tfci -hostname=$TF_CLOUD_HOSTNAME  -token=$TF_API_TOKEN -organization=$TF_CLOUD_ORGANIZATION run create -workspace=$TF_WORKSPACE -configuration_version=$CONFIGURATION_VERSION_ID -message=$MESSAGE -plan-only=$PLAN_ONLY
   artifacts:
     reports:
       dotenv: .env
