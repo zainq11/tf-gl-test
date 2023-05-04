@@ -38,7 +38,7 @@
 # Please refer: https://developer.hashicorp.com/terraform/cli/config/environment-variables#tf_var_name
 # An example to do this inline, 
 #   variables:
-#     TF_VAR_image_id: 'ami-abc1'
+#     TF_VAR_image_id: "\"ami-abc1\"" # NOTE: The escape characters are required to pass this safely downstream into terraform as a string
 #     TF_VAR_user_map: '{"1":{"name":"jason bourne","size":2}}'
 #     TF_VAR_availability_zone_names: '["us-east-1a","us-west-1c", "us-west-2b"]'
 
